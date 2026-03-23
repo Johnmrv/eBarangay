@@ -30,4 +30,21 @@ class MessageController extends Controller
         return back();
     }
 
+    public function getByComplaint($id)
+{
+
+    $appwrite = new AppwriteService();
+
+    $messages = $appwrite->databases->listDocuments(
+        $appwrite->databaseId(),
+        'messages',
+        [
+            \Appwrite\Query::equal('complaint_id', [$id])
+        ]
+    );
+
+    return response()->json($messages['documents']);
+
+}
+
 }

@@ -64,7 +64,7 @@ data-file="{{ $ev['image_id'] }}"
 style="display:none;">
 
 <img 
-src="https://sgp.cloud.appwrite.io/v1/storage/buckets/{{ env('APPWRITE_BUCKET_ID') }}/files/{{ $ev['image_id'] }}/view?project={{ env('APPWRITE_PROJECT_ID') }}"
+src="https://sgp.cloud.appwrite.io/v1/storage/buckets/{{ env('APPWRITE_BUCKET_ID') }}/files/{{ $ev['image_id'] }}/view?project={{ env('APPWRITE_PROJECT_ID') }}&mode=admin"
 style="max-width:300px; border:1px solid #ccc; margin-top:10px;">
 
 </div>
@@ -101,20 +101,19 @@ style="display:none;margin-bottom:8px;">
 
 <h4>Reply</h4>
 
-<form method="POST" action="/admin/message">
+<form id="adminMessageForm">
 
 @csrf
 
-<input type="hidden" name="complaint_id" id="message_complaint_id">
+<input type="hidden" id="message_complaint_id">
 
-<textarea name="message" required style="width:100%;height:80px;"></textarea>
+<textarea id="adminMessageInput" required style="width:100%;height:80px;"></textarea>
 
 <br><br>
 
 <button type="submit">Send Message</button>
 
 </form>
-
 
 <h4>Update Status</h4>
 
@@ -143,7 +142,14 @@ style="display:none;margin-bottom:8px;">
 
 <script>
 
+let currentComplaint = null;
+
+
+/* CLICK COMPLAINT */
+
 function showComplaint(id,title,description,category,location,status){
+
+currentComplaint = id;
 
 document.getElementById("complaintDetails").style.display="block";
 
@@ -157,7 +163,7 @@ document.getElementById("message_complaint_id").value = id;
 document.getElementById("status_complaint_id").value = id;
 
 
-/* Evidence Viewer */
+/* Evidence */
 
 let evidenceItems = document.querySelectorAll(".evidenceItem");
 let foundEvidence = false;
@@ -165,14 +171,10 @@ let foundEvidence = false;
 evidenceItems.forEach(item => {
 
 if(item.dataset.complaint == id){
-
 item.style.display="block";
 foundEvidence = true;
-
 }else{
-
 item.style.display="none";
-
 }
 
 });
@@ -180,29 +182,105 @@ item.style.display="none";
 document.getElementById("noEvidence").style.display = foundEvidence ? "none" : "block";
 
 
-/* Message Viewer */
+/* LOAD MESSAGES */
 
-let messageItems = document.querySelectorAll(".messageItem");
-let foundMessages = false;
+loadMessages();
 
-messageItems.forEach(item => {
+}
 
-if(item.dataset.complaint == id){
 
-item.style.display="block";
-foundMessages = true;
+/* LOAD MESSAGES */
+
+function loadMessages(){
+
+if(!currentComplaint) return;
+
+fetch("/admin/messages/" + currentComplaint)
+.then(res => res.json())
+.then(data => {
+
+let box = document.getElementById("messageBox");
+
+box.innerHTML = "";
+
+if(data.length === 0){
+box.innerHTML = "<p>No messages yet.</p>";
+return;
+}
+
+data.forEach(msg => {
+
+let div = document.createElement("div");
+div.style.marginBottom = "8px";
+
+if(msg.sender_role === "admin"){
+
+div.innerHTML = `
+<div style="text-align:right;">
+<b style="color:green;">Admin</b><br>
+<span style="background:#d4edda;padding:6px;border-radius:6px;display:inline-block;">
+${msg.message}
+</span>
+</div>
+`;
 
 }else{
 
-item.style.display="none";
+div.innerHTML = `
+<div>
+<b style="color:blue;">Resident</b><br>
+<span style="background:#f1f1f1;padding:6px;border-radius:6px;display:inline-block;">
+${msg.message}
+</span>
+</div>
+`;
 
 }
+
+box.appendChild(div);
 
 });
 
-document.getElementById("noMessages").style.display = foundMessages ? "none" : "block";
+box.scrollTop = box.scrollHeight;
+
+});
 
 }
+
+
+/* SEND MESSAGE (NO RELOAD) */
+
+document.getElementById("adminMessageForm").addEventListener("submit", function(e){
+
+e.preventDefault();
+
+let message = document.getElementById("adminMessageInput").value;
+
+fetch("/admin/message", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"X-CSRF-TOKEN": "{{ csrf_token() }}"
+},
+body: JSON.stringify({
+complaint_id: currentComplaint,
+message: message
+})
+})
+.then(() => {
+
+document.getElementById("adminMessageInput").value = "";
+
+loadMessages();
+
+});
+
+});
+
+
+/* AUTO REFRESH */
+
+setInterval(loadMessages, 3000);
 
 </script>
 

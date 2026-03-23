@@ -9,7 +9,7 @@ use App\Http\Controllers\AdminAnnouncementController;
 use App\Http\Controllers\MessageController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('admin.login');
 });
 
 
@@ -19,9 +19,9 @@ Route::post('/admin/login',[AdminAuthController::class,'login']);
 
 Route::get('/admin/dashboard',function(){
 
-    if(!session('admin_id')){
-        return redirect('/admin/login');
-    }
+    // if(!session('admin_id')){
+    //     return redirect('/admin/login');
+    // }
 
     return view('admin.dashboard');
 
@@ -45,3 +45,7 @@ Route::post('/admin/update-status',[AdminComplaintController::class,'updateStatu
 Route::get('/admin/announcements',[AdminAnnouncementController::class,'index']);
 
 Route::post('/admin/announcement',[AdminAnnouncementController::class,'store']);
+
+
+Route::get('/admin/messages/{id}', [MessageController::class, 'getByComplaint']);
+Route::post('/admin/message', [MessageController::class, 'send']);

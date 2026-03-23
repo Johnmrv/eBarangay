@@ -24,7 +24,7 @@ class AdminComplaintController extends Controller
 
         $evidence = $appwrite->databases->listDocuments(
             $appwrite->databaseId(),
-            'complaint_evidence'
+            'complaints_evidence'
         );
 
         $messages = $appwrite->databases->listDocuments(
