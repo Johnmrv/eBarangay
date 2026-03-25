@@ -53,4 +53,23 @@ class AdminAnnouncementController extends Controller
 
     }
 
+    public function delete(Request $request)
+{
+
+    if(!session('admin_id')){
+        return redirect('/admin/login');
+    }
+
+    $appwrite = new AppwriteService();
+
+    $appwrite->databases->deleteDocument(
+        $appwrite->databaseId(),
+        'announcements',
+        $request->id
+    );
+
+    return back()->with('success','Announcement deleted');
+
+}
+
 }

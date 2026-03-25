@@ -49,3 +49,7 @@ Route::post('/admin/announcement',[AdminAnnouncementController::class,'store']);
 
 Route::get('/admin/messages/{id}', [MessageController::class, 'getByComplaint']);
 Route::post('/admin/message', [MessageController::class, 'send']);
+
+Route::post('/admin/announcement/delete', [AdminAnnouncementController::class, 'delete']);
+
+Route::post('/admin/delete-complaint', [AdminComplaintController::class, 'delete']);

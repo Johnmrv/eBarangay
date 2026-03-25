@@ -4,7 +4,7 @@
 
 <h2>Complaints Management</h2>
 
-<table>
+<table border="1" cellpadding="8" cellspacing="0" width="100%">
 
 <tr>
 <th>Title</th>
@@ -12,24 +12,71 @@
 <th>Location</th>
 <th>Status</th>
 <th>Date</th>
+<th>Resident</th>
+<th>Contact</th>
+<th>Address</th>
+<th>Action</th>
 </tr>
 
 @foreach($complaints as $complaint)
 
-<tr onclick="showComplaint(
+<tr>
+
+<td onclick="showComplaint(
 '{{ $complaint['$id'] }}',
 '{{ $complaint['title'] }}',
 '{{ $complaint['description'] }}',
 '{{ $complaint['category'] }}',
 '{{ $complaint['location'] }}',
-'{{ $complaint['status'] }}'
+'{{ $complaint['status'] }}',
+'{{ $complaint['resident_name'] }}',
+'{{ $complaint['resident_contact'] }}',
+'{{ $complaint['resident_address'] }}'
 )">
+{{ $complaint['title'] }}
+</td>
 
-<td>{{ $complaint['title'] }}</td>
 <td>{{ $complaint['category'] }}</td>
-<td>{{ $complaint['location'] }}</td>
+<td>
+<a href="{{ $complaint['location'] }}" target="_blank">
+📍 View Map
+</a>
+</td>
 <td>{{ $complaint['status'] }}</td>
 <td>{{ $complaint['date_submitted'] }}</td>
+
+<td>{{ $complaint['resident_name'] }}</td>
+<td>{{ $complaint['resident_contact'] }}</td>
+<td>{{ $complaint['resident_address'] }}</td>
+
+<td>
+
+@if(strtolower($complaint['status']) != 'resolved')
+
+<form method="POST" action="/admin/delete-complaint"
+onsubmit="return confirm('Mark this complaint as resolved?')"
+onclick="event.stopPropagation();">
+
+@csrf
+
+<input type="hidden" name="complaint_id" value="{{ $complaint['$id'] }}">
+
+<button style="
+background:#22c55e;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+">
+✔
+</button>
+
+</form>
+
+@endif
+
+</td>
 
 </tr>
 
@@ -51,6 +98,16 @@
 <p><b>Location:</b> <span id="c_location"></span></p>
 <p><b>Status:</b> <span id="c_status"></span></p>
 
+<hr>
+
+<h4>Resident Information</h4>
+
+<p><b>Name:</b> <span id="c_name"></span></p>
+<p><b>Contact:</b> <span id="c_contact"></span></p>
+<p><b>Address:</b> <span id="c_address"></span></p>
+
+<hr>
+
 <h4>Evidence</h4>
 
 <div id="evidenceSection">
@@ -60,7 +117,6 @@
 <div 
 class="evidenceItem"
 data-complaint="{{ $ev['complaint_id'] }}"
-data-file="{{ $ev['image_id'] }}"
 style="display:none;">
 
 <img 
@@ -76,27 +132,11 @@ style="max-width:300px; border:1px solid #ccc; margin-top:10px;">
 </div>
 
 
+<hr>
+
 <h4>Conversation</h4>
 
-<div id="messageBox" style="border:1px solid #ccc;padding:10px;height:200px;overflow:auto;">
-
-@foreach($messages as $msg)
-
-<div class="messageItem"
-data-complaint="{{ $msg['complaint_id'] }}"
-style="display:none;margin-bottom:8px;">
-
-<b>{{ $msg['sender_role'] }}:</b>
-
-{{ $msg['message'] }}
-
-</div>
-
-@endforeach
-
-<p id="noMessages">No messages yet.</p>
-
-</div>
+<div id="messageBox" style="border:1px solid #ccc;padding:10px;height:200px;overflow:auto;"></div>
 
 
 <h4>Reply</h4>
@@ -115,6 +155,9 @@ style="display:none;margin-bottom:8px;">
 
 </form>
 
+
+<hr>
+
 <h4>Update Status</h4>
 
 <form method="POST" action="/admin/update-status">
@@ -124,11 +167,9 @@ style="display:none;margin-bottom:8px;">
 <input type="hidden" name="complaint_id" id="status_complaint_id">
 
 <select name="status">
-
 <option>Pending</option>
 <option>Processing</option>
 <option>Resolved</option>
-
 </select>
 
 <br><br>
@@ -147,7 +188,7 @@ let currentComplaint = null;
 
 /* CLICK COMPLAINT */
 
-function showComplaint(id,title,description,category,location,status){
+function showComplaint(id,title,description,category,location,status,name,contact,address){
 
 currentComplaint = id;
 
@@ -158,6 +199,10 @@ document.getElementById("c_description").innerText = description;
 document.getElementById("c_category").innerText = category;
 document.getElementById("c_location").innerText = location;
 document.getElementById("c_status").innerText = status;
+
+document.getElementById("c_name").innerText = name;
+document.getElementById("c_contact").innerText = contact;
+document.getElementById("c_address").innerText = address;
 
 document.getElementById("message_complaint_id").value = id;
 document.getElementById("status_complaint_id").value = id;
@@ -218,7 +263,7 @@ if(msg.sender_role === "admin"){
 div.innerHTML = `
 <div style="text-align:right;">
 <b style="color:green;">Admin</b><br>
-<span style="background:#d4edda;padding:6px;border-radius:6px;display:inline-block;">
+<span style="background:#d4edda;padding:6px;border-radius:6px;">
 ${msg.message}
 </span>
 </div>
@@ -229,7 +274,7 @@ ${msg.message}
 div.innerHTML = `
 <div>
 <b style="color:blue;">Resident</b><br>
-<span style="background:#f1f1f1;padding:6px;border-radius:6px;display:inline-block;">
+<span style="background:#f1f1f1;padding:6px;border-radius:6px;">
 ${msg.message}
 </span>
 </div>
@@ -248,7 +293,7 @@ box.scrollTop = box.scrollHeight;
 }
 
 
-/* SEND MESSAGE (NO RELOAD) */
+/* SEND MESSAGE */
 
 document.getElementById("adminMessageForm").addEventListener("submit", function(e){
 
